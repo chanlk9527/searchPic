@@ -28,13 +28,14 @@ public class GoogleAiService {
     private final ObjectMapper objectMapper;
     private final RestClient restClient = RestClient.create();
 
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
 
     public LlmParsingResult parseSearchQuery(String userQuery, String timezone, List<String> availableCameras) {
         String currentTime = ZonedDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        List<String> safeCameraList = availableCameras == null ? List.of() : availableCameras;
         
         String promptTemplate = aiProperties.getPrompts().getLlmQueryAnalyze();
-        String prompt = String.format(promptTemplate, currentTime, timezone, availableCameras.toString(), userQuery);
+        String prompt = String.format(promptTemplate, currentTime, timezone, safeCameraList, userQuery);
 
         Map<String, Object> payload = Map.of(
             "contents", List.of(
@@ -48,11 +49,17 @@ public class GoogleAiService {
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restClient.post()
-                    .uri(GEMINI_API_URL + aiProperties.getGoogle().getGemini().getApiKey())
+                    .uri(String.format(GEMINI_API_URL,
+                            aiProperties.getGoogle().getGemini().getModel(),
+                            aiProperties.getGoogle().getGemini().getApiKey()))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(payload)
                     .retrieve()
                     .body(Map.class);
+
+            if (Boolean.TRUE.equals(aiProperties.getDebugLogEnabled())) {
+                log.info("Gemini raw response: {}", objectMapper.writeValueAsString(response));
+            }
 
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
@@ -65,6 +72,10 @@ public class GoogleAiService {
             List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
             Map<String, Object> textPart = parts.get(0);
             String jsonOutput = (String) textPart.get("text");
+
+            if (Boolean.TRUE.equals(aiProperties.getDebugLogEnabled())) {
+                log.info("Gemini parsed JSON output: {}", jsonOutput);
+            }
 
             return objectMapper.readValue(jsonOutput, LlmParsingResult.class);
         } catch (Exception e) {

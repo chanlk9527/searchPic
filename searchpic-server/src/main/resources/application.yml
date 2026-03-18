@@ -41,12 +41,21 @@ spring:
 
 # AI Providers Configuration
 ai:
+  debug-log-enabled: true
+  embedding-dimensions: 768
+  search:
+    provider: aliyun
   aliyun:
     dashscope:
-      api-key: ${ALIYUN_API_KEY:your_default_dashscope_key}
+      api-key: ${ALIYUN_API_KEY:sk-86dace9f06ff44fab4802a71c418621e}
+      models:
+        vlm: qwen-vl-max
+        embedding: text-embedding-v2
+        search: qwen-plus
   google:
     gemini:
       api-key: ${GEMINI_API_KEY:your_default_gemini_key}
+      model: gemini-1.5-flash
 
   prompts:
     vlm-image-analyze: |

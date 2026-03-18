@@ -1,6 +1,7 @@
 package com.searchpic.server.service;
 
 import com.searchpic.server.common.exception.BusinessException;
+import com.searchpic.server.config.AiProperties;
 import com.searchpic.server.integration.aliyun.AliyunAiService;
 import com.searchpic.server.integration.google.GoogleAiService;
 import com.searchpic.server.integration.model.LlmParsingResult;
@@ -30,6 +31,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SearchService {
 
+    private final AiProperties aiProperties;
     private final GoogleAiService googleAiService;
     private final AliyunAiService aliyunAiService;
     private final ElasticsearchOperations elasticsearchOperations;
@@ -39,7 +41,7 @@ public class SearchService {
     }
 
     public SearchDebugResult searchEventsDebug(String tenantId, String userQuery, String timezone, List<String> cameraIds) {
-        LlmParsingResult parsedIntent = googleAiService.parseSearchQuery(userQuery, timezone, cameraIds);
+        LlmParsingResult parsedIntent = parseSearchIntent(userQuery, timezone, cameraIds);
         log.info("Parsed Search Intent: {}", parsedIntent);
 
         if (!StringUtils.hasText(parsedIntent.getSearch_intent_caption()) &&
@@ -113,6 +115,14 @@ public class SearchService {
         parsedSummary.put("search_intent_caption", parsedIntent.getSearch_intent_caption());
 
         return new SearchDebugResult(requestSummary, parsedSummary, results);
+    }
+
+    private LlmParsingResult parseSearchIntent(String userQuery, String timezone, List<String> cameraIds) {
+        String provider = aiProperties.getSearch() == null ? "google" : aiProperties.getSearch().getProvider();
+        if ("aliyun".equalsIgnoreCase(provider)) {
+            return aliyunAiService.parseSearchQuery(userQuery, timezone, cameraIds);
+        }
+        return googleAiService.parseSearchQuery(userQuery, timezone, cameraIds);
     }
 
     public record SearchDebugResult(

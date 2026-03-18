@@ -1,5 +1,6 @@
 package com.searchpic.server.integration.kafka;
 
+import com.searchpic.server.config.AiProperties;
 import com.searchpic.server.controller.EventIngestController;
 import com.searchpic.server.integration.aliyun.AliyunAiService;
 import com.searchpic.server.integration.model.VlmExtractionResult;
@@ -11,6 +12,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +23,7 @@ import java.util.Map;
 public class EventIngestConsumer {
 
     private final AliyunAiService aliyunAiService;
+    private final AiProperties aiProperties;
     private final AlertEventRepository alertEventRepository;
 
     @KafkaListener(topics = EventIngestController.INGEST_TOPIC, groupId = "searchpic-worker-group")
@@ -47,6 +51,7 @@ public class EventIngestConsumer {
             List<Float> embeddingVector = null;
             if (StringUtils.hasText(sceneCaption)) {
                 embeddingVector = aliyunAiService.generateEmbedding(sceneCaption);
+                embeddingVector = normalizeEmbeddingDimensions(eventId, embeddingVector);
             }
 
             // 4. Persistence to Elasticsearch
@@ -79,5 +84,32 @@ public class EventIngestConsumer {
         if (result.getPhysical_security_events() != null) sb.append(result.getPhysical_security_events()).append(" ");
         if (result.getFire_and_smoke() != null) sb.append(result.getFire_and_smoke()).append(" ");
         return sb.toString().trim();
+    }
+
+    private List<Float> normalizeEmbeddingDimensions(String eventId, List<Float> embeddingVector) {
+        if (embeddingVector == null) {
+            return null;
+        }
+
+        int expectedDimensions = aiProperties.getEmbeddingDimensions() == null ? 768 : aiProperties.getEmbeddingDimensions();
+        if (embeddingVector.size() == expectedDimensions) {
+            return embeddingVector;
+        }
+
+        log.warn("Embedding dimension mismatch for event {}. expected={}, actual={}. Vector will be resized before indexing.",
+                eventId, expectedDimensions, embeddingVector.size());
+
+        List<Float> normalized = new ArrayList<>(embeddingVector);
+        if (normalized.size() > expectedDimensions) {
+            normalized = new ArrayList<>(normalized.subList(0, expectedDimensions));
+        } else {
+            normalized.addAll(Collections.nCopies(expectedDimensions - normalized.size(), 0.0f));
+        }
+
+        if (Boolean.TRUE.equals(aiProperties.getDebugLogEnabled())) {
+            log.info("Normalized embedding vector size for event {}: {}", eventId, normalized.size());
+        }
+
+        return normalized;
     }
 }
