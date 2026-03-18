@@ -85,6 +85,17 @@ ai:
 server:
   port: 8080
 
+app:
+  auth:
+    enabled: false
+    default-tenant-id: tenant_local_dev
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
 # OSS Settings
 oss:
   endpoint: http://localhost:9000

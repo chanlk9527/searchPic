@@ -26,6 +26,7 @@ public class EventIngestConsumer {
     public void consumeIngestEvent(Map<String, Object> message) {
         String eventId = (String) message.get("event_id");
         String tenantId = (String) message.get("tenant_id");
+        String userId = (String) message.get("user_id");
         String cameraId = (String) message.get("camera_id");
         Long timestamp = ((Number) message.get("timestamp")).longValue();
         String imageUrl = (String) message.get("image_url");
@@ -52,6 +53,7 @@ public class EventIngestConsumer {
             AlertEventDocument doc = new AlertEventDocument();
             doc.setEventId(eventId);
             doc.setTenantId(tenantId);
+            doc.setUserId(userId);
             doc.setCameraId(cameraId);
             doc.setTimestamp(timestamp);
             doc.setImageUrl(imageUrl);

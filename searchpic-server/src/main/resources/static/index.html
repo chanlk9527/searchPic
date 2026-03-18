@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SearchPic Console</title>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">SP</div>
+            <div>
+                <h1>SearchPic Console</h1>
+                <p>Default tenant workspace</p>
+            </div>
+        </div>
+
+        <div class="tenant-card">
+            <span class="eyebrow">Current Tenant</span>
+            <strong id="tenantLabel">tenant_local_dev</strong>
+            <span class="tenant-meta">No login · Single tenant mode</span>
+        </div>
+
+        <nav class="nav">
+            <button class="nav-link active" data-view="dashboard">总览</button>
+            <button class="nav-link" data-view="events">事件浏览</button>
+            <button class="nav-link" data-view="search">搜索调试</button>
+            <button class="nav-link" data-view="upload">上传调试</button>
+        </nav>
+    </aside>
+
+    <main class="content">
+        <header class="topbar">
+            <div>
+                <span class="eyebrow">SaaS Debug Console</span>
+                <h2 id="viewTitle">总览</h2>
+            </div>
+            <button id="refreshCurrentView" class="ghost-button">刷新当前页</button>
+        </header>
+
+        <section id="dashboardView" class="view active">
+            <div class="hero-card">
+                <div>
+                    <span class="eyebrow">Overview</span>
+                    <h3>把“能看、能查、能调试”先集中到一个入口</h3>
+                    <p>这里先聚焦当前租户的事件总量、设备活跃度和最新上传动态，方便快速判断系统是否正常工作。</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="primary-button" data-jump="events">查看事件</button>
+                    <button class="ghost-button" data-jump="search">开始调试搜索</button>
+                </div>
+            </div>
+
+            <div class="stats-grid" id="overviewStats">
+                <article class="stat-card">
+                    <span>事件总数</span>
+                    <strong id="statTotalEvents">-</strong>
+                </article>
+                <article class="stat-card">
+                    <span>设备数</span>
+                    <strong id="statDeviceCount">-</strong>
+                </article>
+                <article class="stat-card">
+                    <span>用户数</span>
+                    <strong id="statUserCount">-</strong>
+                </article>
+                <article class="stat-card">
+                    <span>最近事件时间</span>
+                    <strong id="statLatestEvent">-</strong>
+                </article>
+            </div>
+
+            <div class="panel-grid">
+                <section class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow">Latest Feed</span>
+                            <h3>最新事件</h3>
+                        </div>
+                    </div>
+                    <div id="latestEventsFeed" class="feed-list empty-state">暂无数据</div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow">Top Devices</span>
+                            <h3>设备活跃排行</h3>
+                        </div>
+                    </div>
+                    <div id="cameraRanking" class="ranking-list empty-state">暂无数据</div>
+                </section>
+            </div>
+        </section>
+
+        <section id="eventsView" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">Event Explorer</span>
+                        <h3>事件浏览</h3>
+                    </div>
+                </div>
+                <form id="eventsFilterForm" class="filter-grid">
+                    <label>
+                        <span>用户 ID</span>
+                        <input type="text" name="user_id" placeholder="如 user_alice">
+                    </label>
+                    <label>
+                        <span>设备 ID</span>
+                        <input type="text" name="camera_id" placeholder="如 cam_front_door_01">
+                    </label>
+                    <label>
+                        <span>开始时间</span>
+                        <input type="datetime-local" name="start_time">
+                    </label>
+                    <label>
+                        <span>结束时间</span>
+                        <input type="datetime-local" name="end_time">
+                    </label>
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">查询事件</button>
+                        <button type="button" id="resetEventsFilter" class="ghost-button">重置</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">Results</span>
+                        <h3>事件列表</h3>
+                    </div>
+                    <span id="eventsMeta" class="panel-meta"></span>
+                </div>
+                <div id="eventsTableWrap" class="table-wrap"></div>
+            </div>
+        </section>
+
+        <section id="searchView" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">Natural Language Search</span>
+                        <h3>搜索调试</h3>
+                    </div>
+                </div>
+                <form id="searchForm" class="search-form">
+                    <label class="search-box">
+                        <span>搜索语句</span>
+                        <textarea name="query" rows="3" placeholder="例如：昨天下午有谁在门口拿了快递？" required></textarea>
+                    </label>
+
+                    <div class="filter-grid">
+                        <label>
+                            <span>时区</span>
+                            <input type="text" name="timezone" value="Asia/Shanghai">
+                        </label>
+                        <label>
+                            <span>设备范围</span>
+                            <input type="text" name="camera_ids" placeholder="多个设备用逗号分隔">
+                        </label>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">开始搜索</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="panel-grid search-grid">
+                <section class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow">Intent Parse</span>
+                            <h3>解析结果</h3>
+                        </div>
+                    </div>
+                    <pre id="parsedIntentPanel" class="json-panel">等待一次搜索...</pre>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow">Request Snapshot</span>
+                            <h3>请求参数</h3>
+                        </div>
+                    </div>
+                    <pre id="searchRequestPanel" class="json-panel">等待一次搜索...</pre>
+                </section>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">Matches</span>
+                        <h3>搜索结果</h3>
+                    </div>
+                    <span id="searchMeta" class="panel-meta"></span>
+                </div>
+                <div id="searchResultsGrid" class="result-grid empty-state">先发起一次搜索试试</div>
+            </div>
+        </section>
+
+        <section id="uploadView" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">Direct Upload Ingestion</span>
+                        <h3>上传告警图片调试</h3>
+                    </div>
+                </div>
+                <form id="uploadForm" class="search-form">
+                    <div class="filter-grid upload-grid">
+                        <label>
+                            <span>事件 ID</span>
+                            <input type="text" name="event_id" placeholder="如 evt_upload_debug_001" required>
+                        </label>
+                        <label>
+                            <span>设备 ID</span>
+                            <input type="text" name="camera_id" placeholder="如 cam_front_door_01" required>
+                        </label>
+                        <label>
+                            <span>用户 ID</span>
+                            <input type="text" name="user_id" placeholder="可选，不填则按设备自动解析">
+                        </label>
+                        <label>
+                            <span>时间戳</span>
+                            <input type="datetime-local" name="timestamp">
+                        </label>
+                    </div>
+
+                    <label class="search-box">
+                        <span>告警图片</span>
+                        <input type="file" name="file" accept="image/*" required>
+                    </label>
+
+                    <div class="hero-actions">
+                        <button type="button" id="fillUploadDefaults" class="ghost-button">生成默认值</button>
+                        <button type="submit" class="primary-button">上传并 Ingestion</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="panel-grid search-grid">
+                <section class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow">Last Request</span>
+                            <h3>上传请求</h3>
+                        </div>
+                    </div>
+                    <pre id="uploadRequestPanel" class="json-panel">等待一次上传...</pre>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow">Server Response</span>
+                            <h3>入库返回</h3>
+                        </div>
+                    </div>
+                    <pre id="uploadResponsePanel" class="json-panel">等待一次上传...</pre>
+                </section>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">Recent Uploads</span>
+                        <h3>最近上传记录</h3>
+                    </div>
+                </div>
+                <div id="uploadHistory" class="feed-list empty-state">还没有上传记录</div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<dialog id="eventDetailDialog" class="detail-dialog">
+    <div class="dialog-header">
+        <div>
+            <span class="eyebrow">Event Detail</span>
+            <h3 id="detailTitle">事件详情</h3>
+        </div>
+        <button id="closeDetailDialog" class="ghost-button">关闭</button>
+    </div>
+    <div id="eventDetailBody" class="detail-body"></div>
+</dialog>
+
+<script src="/app.js"></script>
+</body>
+</html>

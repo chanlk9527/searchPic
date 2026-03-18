@@ -2,6 +2,7 @@ package com.searchpic.server.config.interceptor;
 
 import com.searchpic.server.common.context.TenantContextHolder;
 import com.searchpic.server.common.exception.BusinessException;
+import com.searchpic.server.config.AuthProperties;
 import com.searchpic.server.model.entity.Tenant;
 import com.searchpic.server.repository.TenantRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,10 +19,17 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class ApiKeyInterceptor implements HandlerInterceptor {
 
     private final TenantRepository tenantRepository;
+    private final AuthProperties authProperties;
     private static final String BEARER_PREFIX = "Bearer ";
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        if (!authProperties.isEnabled()) {
+            TenantContextHolder.setTenantId(authProperties.getDefaultTenantId());
+            log.debug("Authentication is disabled. Using default tenant: {}", authProperties.getDefaultTenantId());
+            return true;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith(BEARER_PREFIX)) {

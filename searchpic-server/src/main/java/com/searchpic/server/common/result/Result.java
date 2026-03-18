@@ -1,11 +1,18 @@
 package com.searchpic.server.common.result;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
+@Schema(description = "Standard API response wrapper")
 public class Result<T> {
+    @Schema(description = "Business status code", example = "200")
     private int code;
+
+    @Schema(description = "Response message", example = "Success")
     private String message;
+
+    @Schema(description = "Response payload")
     private T data;
 
     public static <T> Result<T> success(T data) {

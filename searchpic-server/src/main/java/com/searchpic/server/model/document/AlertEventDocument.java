@@ -22,6 +22,9 @@ public class AlertEventDocument {
     private String tenantId; // Absolute isolation key
 
     @Field(type = FieldType.Keyword)
+    private String userId;
+
+    @Field(type = FieldType.Keyword)
     private String cameraId;
 
     @Field(type = FieldType.Date)
